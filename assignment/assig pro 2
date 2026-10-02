@@ -1,0 +1,244 @@
+import java.time.LocalDate;
+
+class Student {
+    private String name;
+
+    public Student(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+
+abstract class Assignment {
+    private String title;
+    private int maxMarks;
+    private LocalDate dueDate;
+
+    public Assignment(String title, int maxMarks, LocalDate dueDate) {
+        this.title = title;
+        this.maxMarks = maxMarks;
+        this.dueDate = dueDate;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public int getMaxMarks() {
+        return maxMarks;
+    }
+
+    public LocalDate getDueDate() {
+        return dueDate;
+    }
+
+    public abstract double applyPenalty(double marks, long lateDays);
+}
+
+class CodingAssignment extends Assignment {
+
+    public CodingAssignment(String title, int maxMarks, LocalDate dueDate) {
+        super(title, maxMarks, dueDate);
+    }
+
+    @Override
+    public double applyPenalty(double marks, long lateDays) {
+        double penalty = lateDays * 0.10;
+        return marks * (1 - penalty);
+    }
+}
+
+class WrittenAssignment extends Assignment {
+
+    public WrittenAssignment(String title, int maxMarks, LocalDate dueDate) {
+        super(title, maxMarks, dueDate);
+    }
+
+    @Override
+    public double applyPenalty(double marks, long lateDays) {
+        double penalty = lateDays * 0.20;
+        return marks * (1 - penalty);
+    }
+}
+
+enum SubmissionStatus {
+    SUBMITTED,
+    GRADED
+}
+
+class Submission {
+    private Student student;
+    private Assignment assignment;
+    private LocalDate submissionDate;
+    private SubmissionStatus status;
+    private double finalMarks;
+
+    public Submission(
+            Student student,
+            Assignment assignment,
+            LocalDate submissionDate) {
+
+        this.student = student;
+        this.assignment = assignment;
+        this.submissionDate = submissionDate;
+        this.status = SubmissionStatus.SUBMITTED;
+    }
+
+    public void grade(double awardedMarks) {
+
+        if (status != SubmissionStatus.SUBMITTED) {
+            throw new IllegalStateException(
+                "Submission has already been graded."
+            );
+        }
+
+        if (awardedMarks < 0 ||
+            awardedMarks > assignment.getMaxMarks()) {
+
+            throw new IllegalArgumentException(
+                "Marks must be between 0 and " +
+                assignment.getMaxMarks()
+            );
+        }
+
+        long lateDays = 0;
+
+        if (submissionDate.isAfter(assignment.getDueDate())) {
+            lateDays = java.time.temporal.ChronoUnit.DAYS.between(
+                assignment.getDueDate(),
+                submissionDate
+            );
+        }
+
+        finalMarks = assignment.applyPenalty(
+            awardedMarks,
+            lateDays
+        );
+
+        status = SubmissionStatus.GRADED;
+
+        if (lateDays == 0) {
+            System.out.printf(
+                "%s graded: %.0f/%d.%n",
+                student.getName(),
+                finalMarks,
+                assignment.getMaxMarks()
+            );
+        } else {
+            double penaltyPercent =
+                (finalMarks == 0)
+                ? 0
+                : ((awardedMarks - finalMarks) / awardedMarks) * 100;
+
+            System.out.printf(
+                "%s graded: %.0f/%d after %.0f%% late penalty.%n",
+                student.getName(),
+                finalMarks,
+                assignment.getMaxMarks(),
+                penaltyPercent
+            );
+        }
+
+        System.out.println("Status: " + status);
+    }
+
+    public SubmissionStatus getStatus() {
+        return status;
+    }
+}
+
+class SubmissionPortal {
+
+    public Submission submit(
+            Student student,
+            Assignment assignment,
+            LocalDate date) {
+
+        Submission submission =
+            new Submission(student, assignment, date);
+
+        long lateDays = 0;
+
+        if (date.isAfter(assignment.getDueDate())) {
+            lateDays = java.time.temporal.ChronoUnit.DAYS.between(
+                assignment.getDueDate(),
+                date
+            );
+        }
+
+        if (lateDays == 0) {
+            System.out.println(
+                student.getName() +
+                "'s submission for '" +
+                assignment.getTitle() +
+                "' received (on time)."
+            );
+        } else {
+            System.out.println(
+                student.getName() +
+                "'s submission for '" +
+                assignment.getTitle() +
+                "' received (" +
+                lateDays +
+                " days late)."
+            );
+        }
+
+        System.out.println("Status: " + submission.getStatus());
+
+        return submission;
+    }
+}
+
+public class Q2_AssignmentPortal {
+
+    public static void main(String[] args) {
+
+        Student asha = new Student("Asha");
+        Student ravi = new Student("Ravi");
+
+        Assignment coding = new CodingAssignment(
+            "Linked List Lab",
+            50,
+            LocalDate.of(2026, 3, 10)
+        );
+
+        Assignment written = new WrittenAssignment(
+            "Design Essay",
+            50,
+            LocalDate.of(2026, 3, 12)
+        );
+
+        SubmissionPortal portal = new SubmissionPortal();
+
+        Submission ashaSubmission =
+            portal.submit(
+                asha,
+                coding,
+                LocalDate.of(2026, 3, 10)
+            );
+
+        Submission raviSubmission =
+            portal.submit(
+                ravi,
+                written,
+                LocalDate.of(2026, 3, 14)
+            );
+
+        ashaSubmission.grade(45);
+
+        raviSubmission.grade(40);
+
+        try {
+            ashaSubmission.grade(40);
+        } catch (Exception e) {
+            System.out.println(
+                "Cannot resubmit: 'Linked List Lab' " +
+                "has already been graded."
+            );
+        }
+    }
+}
