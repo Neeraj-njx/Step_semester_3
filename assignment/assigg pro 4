@@ -1,0 +1,261 @@
+abstract class MembershipPlan {
+    private String name;
+    private int months;
+
+    public MembershipPlan(String name, int months) {
+        this.name = name;
+        this.months = months;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getMonths() {
+        return months;
+    }
+
+    public abstract double calculateFee();
+}
+
+class MonthlyPlan extends MembershipPlan {
+
+    public MonthlyPlan() {
+        super("Monthly", 1);
+    }
+
+    public double calculateFee() {
+        return 1000;
+    }
+}
+
+class QuarterlyPlan extends MembershipPlan {
+
+    public QuarterlyPlan() {
+        super("Quarterly", 3);
+    }
+
+    public double calculateFee() {
+        return 1000 * 3 * 0.90;
+    }
+}
+
+class AnnualPlan extends MembershipPlan {
+
+    public AnnualPlan() {
+        super("Annual", 12);
+    }
+
+    public double calculateFee() {
+        return 1000 * 12 * 0.75;
+    }
+}
+
+enum MembershipStatus {
+    ACTIVE,
+    FROZEN,
+    EXPIRED
+}
+
+class Member {
+    private String name;
+    private Membership membership;
+
+    public Member(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void buyMembership(MembershipPlan plan) {
+
+        membership = new Membership(this, plan);
+
+        System.out.println(
+            plan.getName() +
+            " membership created for " +
+            name + "."
+        );
+
+        System.out.printf(
+            "Fee: ₹%.2f%n",
+            plan.calculateFee()
+        );
+
+        System.out.println(
+            "Status: " + membership.getStatus()
+        );
+    }
+
+    public void checkIn() {
+
+        if (membership == null) {
+            System.out.println(
+                "Check-in denied: No membership."
+            );
+            return;
+        }
+
+        membership.checkIn();
+    }
+
+    public void freeze() {
+
+        if (membership != null) {
+            membership.freeze();
+        }
+    }
+
+    public void unfreeze() {
+
+        if (membership != null) {
+            membership.unfreeze();
+        }
+    }
+
+    public void expire() {
+
+        if (membership != null) {
+            membership.expire();
+        }
+    }
+}
+
+class Membership {
+    private Member member;
+    private MembershipPlan plan;
+    private MembershipStatus status;
+
+    public Membership(
+            Member member,
+            MembershipPlan plan) {
+
+        this.member = member;
+        this.plan = plan;
+        this.status = MembershipStatus.ACTIVE;
+    }
+
+    public MembershipStatus getStatus() {
+        return status;
+    }
+
+    public void checkIn() {
+
+        if (status == MembershipStatus.ACTIVE) {
+            System.out.println(
+                member.getName() +
+                " checked in successfully."
+            );
+        } else {
+            System.out.println(
+                "Check-in denied: " +
+                member.getName() +
+                "'s membership is " +
+                status + "."
+            );
+        }
+    }
+
+    public void freeze() {
+
+        if (status == MembershipStatus.EXPIRED) {
+            System.out.println(
+                "Cannot freeze an Expired membership."
+            );
+            return;
+        }
+
+        if (status == MembershipStatus.FROZEN) {
+            System.out.println(
+                "Membership is already Frozen."
+            );
+            return;
+        }
+
+        status = MembershipStatus.FROZEN;
+
+        System.out.println(
+            member.getName() +
+            "'s membership frozen."
+        );
+
+        System.out.println(
+            "Status: " + status
+        );
+    }
+
+    public void unfreeze() {
+
+        if (status == MembershipStatus.EXPIRED) {
+            System.out.println(
+                "Cannot unfreeze an Expired membership."
+            );
+            return;
+        }
+
+        if (status == MembershipStatus.ACTIVE) {
+            System.out.println(
+                "Membership is already Active."
+            );
+            return;
+        }
+
+        status = MembershipStatus.ACTIVE;
+
+        System.out.println(
+            member.getName() +
+            "'s membership unfrozen."
+        );
+
+        System.out.println(
+            "Status: " + status
+        );
+    }
+
+    public void expire() {
+
+        if (status == MembershipStatus.EXPIRED) {
+            return;
+        }
+
+        status = MembershipStatus.EXPIRED;
+
+        System.out.println(
+            member.getName() +
+            "'s membership expired."
+        );
+
+        System.out.println(
+            "Status: " + status
+        );
+    }
+}
+
+public class Q4_FitZone {
+
+    public static void main(String[] args) {
+
+        Member asha = new Member("Asha");
+        Member ravi = new Member("Ravi");
+
+        asha.buyMembership(
+            new QuarterlyPlan()
+        );
+
+        ravi.buyMembership(
+            new MonthlyPlan()
+        );
+
+        asha.checkIn();
+
+        asha.freeze();
+
+        asha.checkIn();
+
+        ravi.expire();
+
+        ravi.freeze();
+    }
+}
